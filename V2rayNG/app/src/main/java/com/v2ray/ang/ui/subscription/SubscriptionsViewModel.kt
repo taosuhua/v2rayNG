@@ -11,6 +11,8 @@ import com.v2ray.ang.dto.entities.SubscriptionItem
 import com.v2ray.ang.extension.moveItem
 import com.v2ray.ang.handler.AngConfigManager
 import com.v2ray.ang.handler.MmkvManager
+import com.v2ray.ang.handler.SubscriptionUpdater
+import com.v2ray.ang.util.Utils
 import com.v2ray.ang.handler.SettingsChangeManager
 import com.v2ray.ang.handler.SettingsManager
 import com.v2ray.ang.helper.MessageHelper
@@ -37,6 +39,30 @@ class SubscriptionsViewModel(application: Application) : BaseViewModel(applicati
     val subsFlow: StateFlow<List<SubscriptionCache>> = _subsFlow.asStateFlow()
 
     fun getAll(): List<SubscriptionCache> = subscriptions.toList()
+
+    fun importFromTvScan(remarks: String, url: String) {
+        val trimmedUrl = url.trim()
+        viewModelScope.launch(Dispatchers.IO) {
+            if (trimmedUrl.startsWith("http://", ignoreCase = true) || trimmedUrl.startsWith("https://", ignoreCase = true)) {
+                val subId = Utils.getUuid()
+                val subItem = SubscriptionItem().apply {
+                    this.remarks = remarks.ifBlank { "Sub " + Utils.formatTimestamp(System.currentTimeMillis()) }
+                    this.url = trimmedUrl
+                    this.enabled = true
+                    this.autoUpdate = true
+                }
+                MmkvManager.encodeSubscription(subId, subItem)
+                SubscriptionUpdater.syncOne(subId = subId)
+                AngConfigManager.updateConfigViaSub(SubscriptionCache(subId, subItem))
+                SettingsChangeManager.makeSetupGroupTab()
+            } else {
+                AngConfigManager.importBatchConfig(trimmedUrl, "", false)
+            }
+            withContext(Dispatchers.Main) {
+                reload()
+            }
+        }
+    }
 
     fun reload() {
         subscriptions.clear()

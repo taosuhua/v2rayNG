@@ -21,6 +21,13 @@ import com.v2ray.ang.extension.moveItem
 import com.v2ray.ang.handler.SubscriptionInfoParser
 import com.v2ray.ang.ui.base.BaseViewModel
 import com.v2ray.ang.util.LogUtil
+import com.v2ray.ang.dto.entities.SubscriptionItem
+import com.v2ray.ang.handler.AngConfigManager
+import com.v2ray.ang.handler.MmkvManager
+import com.v2ray.ang.handler.SettingsChangeManager
+import com.v2ray.ang.handler.SubscriptionUpdater
+import com.v2ray.ang.util.Utils
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineDispatcher
@@ -302,6 +309,18 @@ class MainViewModel(
                 _uiState.update { it.copy(shareQRCodeBitmap = null) }
             }
 
+            MainAction.TvQrImport -> {
+                _uiState.update { it.copy(showTvQrImportDialog = true) }
+            }
+
+            MainAction.DismissTvQrImportDialog -> {
+                _uiState.update { it.copy(showTvQrImportDialog = false) }
+            }
+
+            is MainAction.ImportFromTvScan -> {
+                importFromTvScan(action.remarks, action.url)
+            }
+
             MainAction.ToggleService,
             MainAction.TestCurrentServer,
             MainAction.ImportQRcode,
@@ -515,6 +534,32 @@ class MainViewModel(
     }
 
     // ---------- Business actions (coroutine-based) ----------
+    fun importFromTvScan(remarks: String, url: String) {
+        val trimmedUrl = url.trim()
+        launchLoading {
+            withContext(ioDispatcher) {
+                if (trimmedUrl.startsWith("http://", ignoreCase = true) || trimmedUrl.startsWith("https://", ignoreCase = true)) {
+                    val subId = Utils.getUuid()
+                    val subItem = SubscriptionItem().apply {
+                        this.remarks = remarks.ifBlank { "Sub " + Utils.formatTimestamp(System.currentTimeMillis()) }
+                        this.url = trimmedUrl
+                        this.enabled = true
+                        this.autoUpdate = true
+                    }
+                    MmkvManager.encodeSubscription(subId, subItem)
+                    SubscriptionUpdater.syncOne(subId = subId)
+                    AngConfigManager.updateConfigViaSub(SubscriptionCache(subId, subItem))
+                    SettingsChangeManager.makeSetupGroupTab()
+                    withContext(Dispatchers.Main) {
+                        setupGroupTab(forceRefresh = true)
+                    }
+                } else {
+                    importBatchConfig(trimmedUrl)
+                }
+            }
+        }
+    }
+
     private fun importBatchConfig(configText: String) {
         launchLoading {
             withContext(ioDispatcher) {

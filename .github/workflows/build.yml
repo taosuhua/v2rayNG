@@ -8,7 +8,7 @@ on:
         type: string
   push:
     branches:
-      - master
+      - '**'
 
 permissions:
   contents: write
@@ -86,12 +86,22 @@ jobs:
         distribution: 'temurin'
         java-version: '21'
 
-    - name: Decode Keystore
-      uses: timheuer/base64-to-file@v2.0.0
-      id: android_keystore
-      with:
-        fileName: "android_keystore.jks"
-        encodedString: ${{ secrets.APP_KEYSTORE_BASE64 }}
+    - name: Setup Keystore
+      id: keystore
+      run: |
+        if [ -n "${{ secrets.APP_KEYSTORE_BASE64 }}" ]; then
+          echo "${{ secrets.APP_KEYSTORE_BASE64 }}" | base64 -d > /tmp/release.keystore
+          echo "file=/tmp/release.keystore" >> $GITHUB_OUTPUT
+          echo "store_pwd=${{ secrets.APP_KEYSTORE_PASSWORD }}" >> $GITHUB_OUTPUT
+          echo "alias=${{ secrets.APP_KEYSTORE_ALIAS }}" >> $GITHUB_OUTPUT
+          echo "key_pwd=${{ secrets.APP_KEY_PASSWORD }}" >> $GITHUB_OUTPUT
+        else
+          keytool -genkeypair -v -keystore /tmp/release.keystore -alias v2rayng_tv -keyalg RSA -keysize 2048 -validity 10000 -storepass android -keypass android -dname "CN=v2rayNG TV, OU=TV, O=TV, L=TV, ST=TV, C=US"
+          echo "file=/tmp/release.keystore" >> $GITHUB_OUTPUT
+          echo "store_pwd=android" >> $GITHUB_OUTPUT
+          echo "alias=v2rayng_tv" >> $GITHUB_OUTPUT
+          echo "key_pwd=android" >> $GITHUB_OUTPUT
+        fi
 
     - name: Build APK
       run: |
@@ -99,7 +109,7 @@ jobs:
         echo "sdk.dir=${ANDROID_HOME}" > local.properties
         chmod 755 gradlew
         ./gradlew licenseFdroidReleaseReport
-        ./gradlew assembleRelease -Pandroid.injected.signing.store.file=${{ steps.android_keystore.outputs.filePath }} -Pandroid.injected.signing.store.password=${{ secrets.APP_KEYSTORE_PASSWORD }} -Pandroid.injected.signing.key.alias=${{ secrets.APP_KEYSTORE_ALIAS }} -Pandroid.injected.signing.key.password=${{ secrets.APP_KEY_PASSWORD }}
+        ./gradlew assembleRelease -Pandroid.injected.signing.store.file=${{ steps.keystore.outputs.file }} -Pandroid.injected.signing.store.password=${{ steps.keystore.outputs.store_pwd }} -Pandroid.injected.signing.key.alias=${{ steps.keystore.outputs.alias }} -Pandroid.injected.signing.key.password=${{ steps.keystore.outputs.key_pwd }}
     
     - name: Upload arm64-v8a APK
       uses: actions/upload-artifact@v7
@@ -128,6 +138,25 @@ jobs:
       with:
         name: universal-apk
         path: ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*universal*.apk
+
+    - name: Create Release and Upload APKs
+      uses: softprops/action-gh-release@v2
+      if: success()
+      with:
+        tag_name: tv-v${{ github.run_number }}
+        name: v2rayNG for Android TV Build ${{ github.run_number }}
+        body: |
+          ### v2rayNG for Android TV
+          - 专为 Android TV 电视端适配
+          - 新增：手机扫码导入订阅功能（在电视端显示二维码，手机扫码即可粘贴并导入订阅）
+          - 包含全架构 APK（arm64-v8a、armeabi-v7a、universal 通用版）
+        files: |
+          ${{ github.workspace }}/V2rayNG/app/build/outputs/apk/*/release/*.apk
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
   sign-and-release:
     needs: build

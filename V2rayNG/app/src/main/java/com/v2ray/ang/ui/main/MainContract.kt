@@ -26,7 +26,8 @@ data class MainUiState(
     val locateTarget: LocateTarget? = null,
     val confirmRemove: Boolean = false,
     val doubleColumnDisplay: Boolean = false,
-    val shareQRCodeBitmap: android.graphics.Bitmap? = null
+    val shareQRCodeBitmap: android.graphics.Bitmap? = null,
+    val showTvQrImportDialog: Boolean = false
 )
 
 /**
@@ -67,6 +68,10 @@ sealed interface MainAction {
     data class OpenSubscriptionLink(val url: String) : MainAction
 
     data class ImportBatchConfig(val configText: String) : MainAction
+
+    data object TvQrImport : MainAction
+    data object DismissTvQrImportDialog : MainAction
+    data class ImportFromTvScan(val remarks: String, val url: String) : MainAction
 
     data object LocateHandled : MainAction
 }

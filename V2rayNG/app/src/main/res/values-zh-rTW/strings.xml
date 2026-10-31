@@ -562,4 +562,11 @@
     <string name="sub_info_open_page">開啟訂閱資訊頁面</string>
     <string name="sub_info_unlimited">無限制</string>
 
+    <!-- TV QR Import -->
+    <string name="title_tv_qr_import">手機掃碼導入訂閱</string>
+    <string name="tv_qr_import_visit_url">手機瀏覽器直接訪問：</string>
+    <string name="tv_qr_import_instruction">1. 請確保手機與電視在同一局域網（同一 Wi-Fi）\n2. 使用手機微信或瀏覽器掃描上方二維碼\n3. 在打開的手機網頁中粘貼訂閱鏈接並提交</string>
+    <string name="tv_qr_import_waiting">正在等待手機掃碼提交訂閱...</string>
+    <string name="tv_qr_import_success">已成功收到訂閱並導入！</string>
+    <string name="tv_qr_import_no_ip">未檢測到電視局域網 IP，請確保電視已連接 Wi-Fi 或有線網絡。</string>
 </resources>

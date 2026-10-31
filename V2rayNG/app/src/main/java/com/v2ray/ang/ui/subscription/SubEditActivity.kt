@@ -37,6 +37,7 @@ import com.v2ray.ang.handler.SubscriptionUpdater
 import com.v2ray.ang.ui.base.BaseComponentActivity
 import com.v2ray.ang.ui.compose.AppTopBar
 import com.v2ray.ang.ui.compose.DeleteConfirmDialog
+import com.v2ray.ang.ui.compose.TvImportDialog
 import com.v2ray.ang.ui.compose.FormDropdownField
 import com.v2ray.ang.ui.compose.FormTextField
 import com.v2ray.ang.ui.compose.NavigationBarsSpacer
@@ -139,6 +140,7 @@ fun SubEditScreen(
     var nextProfile by rememberSaveable { mutableStateOf(initial.nextProfile ?: "") }
 
     var showDeleteConfirm by rememberSaveable { mutableStateOf(false) }
+    var showTvImportDialog by rememberSaveable { mutableStateOf(false) }
     val confirmRemove = MmkvManager.decodeSettingsBool(AppConfig.PREF_CONFIRM_REMOVE, false)
     val scrollState = rememberScrollState()
 
@@ -165,6 +167,9 @@ fun SubEditScreen(
                 title = stringResource(R.string.title_sub_setting),
                 onBackClick = onBackClick,
                 actions = {
+                    IconButton(onClick = { showTvImportDialog = true }) {
+                        Icon(painterResource(R.drawable.ic_scan_24dp), contentDescription = stringResource(R.string.title_tv_qr_import))
+                    }
                     if (editSubId.isNotEmpty()) {
                         IconButton(onClick = {
                             if (confirmRemove) showDeleteConfirm = true else onDelete()
@@ -275,6 +280,19 @@ fun SubEditScreen(
             itemName = initial.remarks,
             onConfirm = onDelete,
             onDismiss = { showDeleteConfirm = false }
+        )
+    }
+
+    if (showTvImportDialog) {
+        TvImportDialog(
+            onDismiss = { showTvImportDialog = false },
+            onImportSuccess = { newRemarks, newUrl ->
+                if (remarks.isBlank() && newRemarks.isNotBlank()) {
+                    remarks = newRemarks
+                }
+                url = newUrl
+                showTvImportDialog = false
+            }
         )
     }
 }

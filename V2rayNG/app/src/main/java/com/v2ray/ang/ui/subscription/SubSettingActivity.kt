@@ -48,6 +48,7 @@ import com.v2ray.ang.ui.compose.DeleteConfirmDialog
 import com.v2ray.ang.ui.compose.ItemDivider
 import com.v2ray.ang.ui.compose.NavigationBarsBottomPadding
 import com.v2ray.ang.ui.compose.QRCodeDialog
+import com.v2ray.ang.ui.compose.TvImportDialog
 import com.v2ray.ang.ui.compose.ReorderableListItem
 import com.v2ray.ang.ui.compose.SelectListDialog
 import com.v2ray.ang.ui.compose.SettingsSwitchItem
@@ -120,6 +121,7 @@ fun SubSettingScreen(
 
     var shareTarget by remember { mutableStateOf<Pair<String, String>?>(null) }
     val qrCodeBitmap by viewModel.qrCode.collectAsStateWithLifecycle()
+    var showTvImportDialog by remember { mutableStateOf(false) }
 
     val lazyListState = rememberLazyListState()
     val reorderableState = rememberReorderableLazyListState(lazyListState) { from, to ->
@@ -134,6 +136,9 @@ fun SubSettingScreen(
                 onBackClick = onBackClick,
                 isLoading = isLoading,
                 actions = {
+                    IconButton(onClick = { showTvImportDialog = true }) {
+                        Icon(painterResource(R.drawable.ic_scan_24dp), contentDescription = stringResource(R.string.title_tv_qr_import))
+                    }
                     IconButton(onClick = onAddClick) {
                         Icon(painterResource(R.drawable.ic_add_24dp), contentDescription = stringResource(R.string.acc_add_subscription))
                     }
@@ -332,6 +337,15 @@ fun SubSettingScreen(
                 TextButton(onClick = { showUpdateDialog = false }) {
                     Text(text = stringResource(R.string.action_cancel))
                 }
+            }
+        )
+    }
+
+    if (showTvImportDialog) {
+        TvImportDialog(
+            onDismiss = { showTvImportDialog = false },
+            onImportSuccess = { remarks, url ->
+                viewModel.importFromTvScan(remarks, url)
             }
         )
     }
