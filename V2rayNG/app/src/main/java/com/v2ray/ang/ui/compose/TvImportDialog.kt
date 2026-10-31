@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
@@ -99,7 +98,7 @@ fun TvImportDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 4.dp),
-                horizontalAlignment = Alignment.CenterVertically
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 if (serverUrl == null && qrBitmap == null) {
                     Text(
@@ -185,7 +184,7 @@ fun TvImportDialog(
                 modifier = Modifier.focusRequester(focusRequester)
             ) {
                 Text(
-                    text = if (isSuccess) stringResource(R.string.action_done) else stringResource(R.string.action_close),
+                    text = if (isSuccess) stringResource(R.string.action_ok) else stringResource(R.string.action_close),
                     fontWeight = FontWeight.Bold
                 )
             }
